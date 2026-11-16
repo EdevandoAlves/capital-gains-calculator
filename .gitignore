@@ -4,3 +4,7 @@ target/
 *.iml
 .vscode/
 .DS_Store
+
+# AI/agent working docs (kept local, not published)
+AGENTS.md
+docs/

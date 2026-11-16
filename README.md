@@ -11,7 +11,7 @@ arithmetic uses `BigDecimal`, and the same input bytes always produce the same o
 > The tax rules implemented here (15% rate, gross-value exemption, loss carryforward) are a
 > fictional, simplified exercise used to model the mechanics. They are **not** a statement of
 > Brazilian law, are not tax advice, and must not be used to compute real tax liability.
-> See [docs/DOMAIN_RULES.md](docs/DOMAIN_RULES.md) §2 for the exact rules implemented.
+> See the [Contract](#contract) section for the exact rules implemented.
 
 ## Requirements
 
@@ -88,9 +88,7 @@ $ echo $?
 1
 ```
 
-## Contract (summary)
-
-Full specification: [docs/CONTRACT.md](docs/CONTRACT.md).
+## Contract
 
 Each stdin line is a JSON array of operations, processed in array order:
 
@@ -107,6 +105,19 @@ Every result line is a JSON array with one object per operation, in a fixed fiel
 input lines are ignored; an empty simulation (`[]`) produces `[]`. Unknown fields, duplicate keys,
 wrong types, out-of-range values, and overselling are rejected. Each simulation is independent:
 assets within a simulation share a loss pool, but nothing is carried across input lines.
+
+### Simulated tax rules
+
+- Each asset keeps an independent position `{quantity, weightedAverageCost}`. BUY recomputes the
+  weighted average at scale 6 (HALF_UP); SELL realizes `(unitPrice - averageCost) * quantity`,
+  rounded once to 2 decimals, and preserves the average of the remaining units.
+- The tax rate is **15%** over the taxable gain of a sale.
+- A sale is exempt when its gross value (`unitPrice * quantity`) is **strictly below 10,000.00**; a
+  gross of exactly 10,000.00 is taxable.
+- Realized losses accumulate in a single loss pool per simulation. Taxable gains consume that pool
+  before taxation; exempt gains neither pay tax nor consume the pool.
+- All math uses `BigDecimal`: intermediate values keep full precision, and each reported monetary
+  value is rounded exactly once (scale 2, HALF_UP).
 
 Exit codes:
 
@@ -134,9 +145,6 @@ Single Maven module, package root `com.capitalgains`:
 Simulations run strictly in input order; assets within one simulation are independent and share
 only that simulation's loss pool.
 
-A deeper walkthrough of the design and the reasoning behind it — including study questions and
-manual challenges — lives in [docs/REVERSE_ENGINEERING_GUIDE.md](docs/REVERSE_ENGINEERING_GUIDE.md).
-
 ## Limitations
 
 - **One JVM run per invocation.** There is no server, daemon, or interactive mode; each run reads
@@ -144,7 +152,7 @@ manual challenges — lives in [docs/REVERSE_ENGINEERING_GUIDE.md](docs/REVERSE_
 - **No persistence.** Positions, realized results, and loss pools live only in memory for the
   duration of a single simulation line. Nothing is carried across lines or across runs.
 - **Simulated tax only.** The rate, exemption threshold, and carryforward rules are an educational
-  fiction, not Brazilian legislation (see the disclaimer and [docs/DOMAIN_RULES.md](docs/DOMAIN_RULES.md) §2).
+  fiction, not Brazilian legislation (see the disclaimer above).
 - **No network.** The tool never fetches prices, corporate actions, or tax tables.
 - **No corporate actions.** Splits, bonuses, dividends, fees, and brokerage costs are out of scope;
   only BUY and SELL operations exist.
@@ -154,15 +162,6 @@ manual challenges — lives in [docs/REVERSE_ENGINEERING_GUIDE.md](docs/REVERSE_
 - **Buffered output.** The whole result is held in memory before being written, which keeps output
   atomic for every input failure at the cost of memory proportional to the total output size. An
   I/O failure during that single final write can leave a partial stdout with exit code 2.
-
-## Documentation
-
-- [docs/CONTRACT.md](docs/CONTRACT.md) — public CLI contract: input/output shape, validation, exit codes.
-- [docs/DOMAIN_RULES.md](docs/DOMAIN_RULES.md) — financial rules, precision policy, invariants.
-- [docs/REVERSE_ENGINEERING_GUIDE.md](docs/REVERSE_ENGINEERING_GUIDE.md) — study roadmap: execution flow, class tour, questions and manual challenges.
-- [docs/ROADMAP.md](docs/ROADMAP.md) — phase plan and acceptance criteria.
-- [docs/STATUS.md](docs/STATUS.md) — current project state.
-- [AGENTS.md](AGENTS.md) — engineering conventions for contributors and agents.
 
 ## License
 
