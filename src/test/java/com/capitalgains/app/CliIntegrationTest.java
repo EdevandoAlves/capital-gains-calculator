@@ -121,6 +121,101 @@ class CliIntegrationTest {
     }
 
     @Test
+    void lossCarryforwardAcrossAssetsInOneSimulation() {
+        String input = "[{\"asset\":\"A\",\"type\":\"BUY\",\"unitPrice\":20.00,\"quantity\":100},"
+                + "{\"asset\":\"A\",\"type\":\"SELL\",\"unitPrice\":10.00,\"quantity\":100},"
+                + "{\"asset\":\"B\",\"type\":\"BUY\",\"unitPrice\":40.00,\"quantity\":200},"
+                + "{\"asset\":\"B\",\"type\":\"SELL\",\"unitPrice\":100.00,\"quantity\":200}]\n";
+
+        String expected = "[{\"operation\":1,\"asset\":\"A\",\"type\":\"BUY\",\"remainingQuantity\":100,"
+                + "\"averageCost\":20.00,\"realizedProfitLoss\":0.00,\"tax\":0.00,"
+                + "\"compensableLoss\":0.00},"
+                + "{\"operation\":2,\"asset\":\"A\",\"type\":\"SELL\",\"remainingQuantity\":0,"
+                + "\"averageCost\":0.00,\"realizedProfitLoss\":-1000.00,\"tax\":0.00,"
+                + "\"compensableLoss\":1000.00},"
+                + "{\"operation\":3,\"asset\":\"B\",\"type\":\"BUY\",\"remainingQuantity\":200,"
+                + "\"averageCost\":40.00,\"realizedProfitLoss\":0.00,\"tax\":0.00,"
+                + "\"compensableLoss\":1000.00},"
+                + "{\"operation\":4,\"asset\":\"B\",\"type\":\"SELL\",\"remainingQuantity\":0,"
+                + "\"averageCost\":0.00,\"realizedProfitLoss\":12000.00,\"tax\":1650.00,"
+                + "\"compensableLoss\":0.00}]\n";
+
+        Invocation result = invoke(input);
+
+        assertEquals(0, result.exitCode());
+        assertEquals(expected, result.out());
+    }
+
+    @Test
+    void exemptProfitableSaleIsNotTaxed() {
+        String input = "[{\"asset\":\"C\",\"type\":\"BUY\",\"unitPrice\":100.00,\"quantity\":100},"
+                + "{\"asset\":\"C\",\"type\":\"SELL\",\"unitPrice\":200.00,\"quantity\":30}]\n";
+
+        String expected = "[{\"operation\":1,\"asset\":\"C\",\"type\":\"BUY\",\"remainingQuantity\":100,"
+                + "\"averageCost\":100.00,\"realizedProfitLoss\":0.00,\"tax\":0.00,"
+                + "\"compensableLoss\":0.00},"
+                + "{\"operation\":2,\"asset\":\"C\",\"type\":\"SELL\",\"remainingQuantity\":70,"
+                + "\"averageCost\":100.00,\"realizedProfitLoss\":3000.00,\"tax\":0.00,"
+                + "\"compensableLoss\":0.00}]\n";
+
+        Invocation result = invoke(input);
+
+        assertEquals(0, result.exitCode());
+        assertEquals(expected, result.out());
+    }
+
+    @Test
+    void saleWithGrossExactlyTenThousandIsTaxed() {
+        String input = "[{\"asset\":\"C\",\"type\":\"BUY\",\"unitPrice\":50.00,\"quantity\":100},"
+                + "{\"asset\":\"C\",\"type\":\"SELL\",\"unitPrice\":100.00,\"quantity\":100}]\n";
+
+        String expected = "[{\"operation\":1,\"asset\":\"C\",\"type\":\"BUY\",\"remainingQuantity\":100,"
+                + "\"averageCost\":50.00,\"realizedProfitLoss\":0.00,\"tax\":0.00,"
+                + "\"compensableLoss\":0.00},"
+                + "{\"operation\":2,\"asset\":\"C\",\"type\":\"SELL\",\"remainingQuantity\":0,"
+                + "\"averageCost\":0.00,\"realizedProfitLoss\":5000.00,\"tax\":750.00,"
+                + "\"compensableLoss\":0.00}]\n";
+
+        Invocation result = invoke(input);
+
+        assertEquals(0, result.exitCode());
+        assertEquals(expected, result.out());
+    }
+
+    @Test
+    void lossPoolDoesNotLeakBetweenSimulationsForTax() {
+        String lossLine = "[{\"asset\":\"A\",\"type\":\"BUY\",\"unitPrice\":20.00,\"quantity\":100},"
+                + "{\"asset\":\"A\",\"type\":\"SELL\",\"unitPrice\":10.00,\"quantity\":100}]\n";
+        String gainLine = "[{\"asset\":\"B\",\"type\":\"BUY\",\"unitPrice\":50.00,\"quantity\":100},"
+                + "{\"asset\":\"B\",\"type\":\"SELL\",\"unitPrice\":100.00,\"quantity\":100}]\n";
+
+        String[] lines = invoke(lossLine + gainLine).out().split("\n");
+
+        assertEquals(2, lines.length);
+        assertTrue(lines[0].endsWith("\"realizedProfitLoss\":-1000.00,\"tax\":0.00,"
+                + "\"compensableLoss\":1000.00}]"));
+        // No offset from line 1: 5000.00 * 15% = 750.00, not 600.00.
+        assertTrue(lines[1].endsWith("\"realizedProfitLoss\":5000.00,\"tax\":750.00,"
+                + "\"compensableLoss\":0.00}]"));
+    }
+
+    @Test
+    void thresholdIsEvaluatedOnExactSixDecimalGross() {
+        String input = "[{\"asset\":\"D\",\"type\":\"BUY\",\"unitPrice\":99.000001,\"quantity\":100},"
+                + "{\"asset\":\"D\",\"type\":\"SELL\",\"unitPrice\":99.999999,\"quantity\":100}]\n"
+                + "[{\"asset\":\"E\",\"type\":\"BUY\",\"unitPrice\":99.000001,\"quantity\":100},"
+                + "{\"asset\":\"E\",\"type\":\"SELL\",\"unitPrice\":100.000001,\"quantity\":100}]\n";
+
+        String[] lines = invoke(input).out().split("\n");
+
+        assertEquals(2, lines.length);
+        // gross 9999.9999 < 10000.00 -> exempt
+        assertTrue(lines[0].endsWith("\"tax\":0.00,\"compensableLoss\":0.00}]"));
+        // gross 10000.0001 >= 10000.00 -> taxable: 100.00 * 15% = 15.00
+        assertTrue(lines[1].endsWith("\"tax\":15.00,\"compensableLoss\":0.00}]"));
+    }
+
+    @Test
     void invalidInputExitsOneWithSingleErrorLineAndNoStdout() {
         Invocation result = invoke("[{\"asset\":\"petr\",\"type\":\"BUY\",\"unitPrice\":10.00,"
                 + "\"quantity\":1}]\n");

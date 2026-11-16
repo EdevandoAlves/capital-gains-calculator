@@ -2,7 +2,7 @@ package com.capitalgains;
 
 import com.capitalgains.app.SimulationRunner;
 import com.capitalgains.json.InvalidInputException;
-import com.capitalgains.tax.ZeroTaxEngine;
+import com.capitalgains.tax.SimulatedTaxEngine;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -32,7 +32,7 @@ public final class Main {
      */
     public static int execute(Reader in, Writer out, Writer err) {
         try {
-            String output = new SimulationRunner(new ZeroTaxEngine()).run(in);
+            String output = new SimulationRunner(new SimulatedTaxEngine()).run(in);
             out.write(output);
             out.flush();
             return 0;
