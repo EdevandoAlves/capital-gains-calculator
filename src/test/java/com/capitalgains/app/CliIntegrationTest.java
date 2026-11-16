@@ -247,4 +247,101 @@ class CliIntegrationTest {
         assertEquals("", result.out());
         assertTrue(result.err().contains("exceeds position"));
     }
+
+    @Test
+    void crlfLineEndingsAreProcessedLikeLf() {
+        Invocation lf = invoke(CONTRACT_INPUT);
+        Invocation crlf = invoke(CONTRACT_INPUT.replace("\n", "\r\n"));
+
+        assertEquals(0, crlf.exitCode());
+        assertEquals(CONTRACT_OUTPUT, crlf.out());
+        assertEquals("", crlf.err());
+        assertEquals(lf.out(), crlf.out());
+    }
+
+    @Test
+    void sellAllResetsAverageAndRebuyUsesTheNewAverage() {
+        String input = "[{\"asset\":\"PETR\",\"type\":\"BUY\",\"unitPrice\":10.00,\"quantity\":100},"
+                + "{\"asset\":\"PETR\",\"type\":\"SELL\",\"unitPrice\":15.00,\"quantity\":100},"
+                + "{\"asset\":\"PETR\",\"type\":\"BUY\",\"unitPrice\":20.00,\"quantity\":50},"
+                + "{\"asset\":\"PETR\",\"type\":\"SELL\",\"unitPrice\":22.00,\"quantity\":50}]\n";
+
+        String expected = "[{\"operation\":1,\"asset\":\"PETR\",\"type\":\"BUY\","
+                + "\"remainingQuantity\":100,\"averageCost\":10.00,\"realizedProfitLoss\":0.00,"
+                + "\"tax\":0.00,\"compensableLoss\":0.00},"
+                + "{\"operation\":2,\"asset\":\"PETR\",\"type\":\"SELL\","
+                + "\"remainingQuantity\":0,\"averageCost\":0.00,\"realizedProfitLoss\":500.00,"
+                + "\"tax\":0.00,\"compensableLoss\":0.00},"
+                + "{\"operation\":3,\"asset\":\"PETR\",\"type\":\"BUY\","
+                + "\"remainingQuantity\":50,\"averageCost\":20.00,\"realizedProfitLoss\":0.00,"
+                + "\"tax\":0.00,\"compensableLoss\":0.00},"
+                + "{\"operation\":4,\"asset\":\"PETR\",\"type\":\"SELL\","
+                + "\"remainingQuantity\":0,\"averageCost\":0.00,\"realizedProfitLoss\":100.00,"
+                + "\"tax\":0.00,\"compensableLoss\":0.00}]\n";
+
+        Invocation result = invoke(input);
+
+        assertEquals(0, result.exitCode());
+        assertEquals(expected, result.out());
+    }
+
+    @Test
+    void interleavedAssetsKeepIndependentLifecycles() {
+        String input = "[{\"asset\":\"PETR\",\"type\":\"BUY\",\"unitPrice\":10.00,\"quantity\":10},"
+                + "{\"asset\":\"VALE\",\"type\":\"BUY\",\"unitPrice\":30.00,\"quantity\":20},"
+                + "{\"asset\":\"PETR\",\"type\":\"SELL\",\"unitPrice\":12.00,\"quantity\":10},"
+                + "{\"asset\":\"VALE\",\"type\":\"SELL\",\"unitPrice\":25.00,\"quantity\":5},"
+                + "{\"asset\":\"PETR\",\"type\":\"BUY\",\"unitPrice\":7.00,\"quantity\":5},"
+                + "{\"asset\":\"VALE\",\"type\":\"SELL\",\"unitPrice\":40.00,\"quantity\":15}]\n";
+
+        String expected = "[{\"operation\":1,\"asset\":\"PETR\",\"type\":\"BUY\","
+                + "\"remainingQuantity\":10,\"averageCost\":10.00,\"realizedProfitLoss\":0.00,"
+                + "\"tax\":0.00,\"compensableLoss\":0.00},"
+                + "{\"operation\":2,\"asset\":\"VALE\",\"type\":\"BUY\","
+                + "\"remainingQuantity\":20,\"averageCost\":30.00,\"realizedProfitLoss\":0.00,"
+                + "\"tax\":0.00,\"compensableLoss\":0.00},"
+                + "{\"operation\":3,\"asset\":\"PETR\",\"type\":\"SELL\","
+                + "\"remainingQuantity\":0,\"averageCost\":0.00,\"realizedProfitLoss\":20.00,"
+                + "\"tax\":0.00,\"compensableLoss\":0.00},"
+                + "{\"operation\":4,\"asset\":\"VALE\",\"type\":\"SELL\","
+                + "\"remainingQuantity\":15,\"averageCost\":30.00,\"realizedProfitLoss\":-25.00,"
+                + "\"tax\":0.00,\"compensableLoss\":25.00},"
+                + "{\"operation\":5,\"asset\":\"PETR\",\"type\":\"BUY\","
+                + "\"remainingQuantity\":5,\"averageCost\":7.00,\"realizedProfitLoss\":0.00,"
+                + "\"tax\":0.00,\"compensableLoss\":25.00},"
+                + "{\"operation\":6,\"asset\":\"VALE\",\"type\":\"SELL\","
+                + "\"remainingQuantity\":0,\"averageCost\":0.00,\"realizedProfitLoss\":150.00,"
+                + "\"tax\":0.00,\"compensableLoss\":25.00}]\n";
+
+        Invocation result = invoke(input);
+
+        assertEquals(0, result.exitCode());
+        assertEquals(expected, result.out());
+    }
+
+    @Test
+    void tenThousandAlternatingOperationsAreProcessed() {
+        StringBuilder input = new StringBuilder("[");
+        for (int i = 0; i < 5000; i++) {
+            if (i > 0) {
+                input.append(',');
+            }
+            input.append("{\"asset\":\"PETR\",\"type\":\"BUY\",\"unitPrice\":10.00,\"quantity\":2},")
+                    .append("{\"asset\":\"PETR\",\"type\":\"SELL\",\"unitPrice\":12.00,\"quantity\":1}");
+        }
+        input.append("]\n");
+
+        Invocation result = invoke(input.toString());
+
+        assertEquals(0, result.exitCode());
+        assertEquals("", result.err());
+        String out = result.out();
+        assertEquals(1L, out.lines().count());
+        assertEquals(10000, out.split("\"operation\":", -1).length - 1);
+        assertTrue(out.startsWith("[{\"operation\":1,\"asset\":\"PETR\",\"type\":\"BUY\","
+                + "\"remainingQuantity\":2,\"averageCost\":10.00,"));
+        assertTrue(out.endsWith("{\"operation\":10000,\"asset\":\"PETR\",\"type\":\"SELL\","
+                + "\"remainingQuantity\":5000,\"averageCost\":10.00,\"realizedProfitLoss\":2.00,"
+                + "\"tax\":0.00,\"compensableLoss\":0.00}]\n"));
+    }
 }

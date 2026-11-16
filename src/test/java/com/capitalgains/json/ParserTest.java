@@ -131,13 +131,22 @@ class ParserTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"petr", "Petr", "", "PETR-3", "PETR 3", "ABCDEFGHIJKLMNOPQRSTU"})
+    @ValueSource(strings = {"petr", "Petr", "", "PETR-3", "PETR 3", "PETR_3",
+            "ABCDEFGHIJKLMNOPQRSTU"})
     void invalidAssetIsRejected(String asset) {
         assertRejected("[" + op(asset, "BUY", "10.00", "1") + "]");
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"buy", "BUY ", "Buy", "", "HOLD"})
+    @ValueSource(strings = {"PETR4", "A1"})
+    void alphanumericAssetIsAccepted(String asset) {
+        List<TradeOperation> operations = parser.parse("[" + op(asset, "BUY", "10.00", "1") + "]");
+
+        assertEquals(asset, operations.get(0).asset());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"buy", "sell", "BUY ", "Buy", "", "HOLD"})
     void invalidTypeIsRejected(String type) {
         assertRejected("[" + op("PETR", type, "10.00", "1") + "]");
     }
@@ -165,6 +174,86 @@ class ParserTest {
         List<TradeOperation> operations = parser.parse("[" + op("PETR", "BUY", "10.00", "100.00") + "]");
 
         assertEquals(100, operations.get(0).quantity());
+    }
+
+    @Test
+    void quantityOfOneIsAccepted() {
+        List<TradeOperation> operations = parser.parse("[" + op("PETR", "BUY", "10.00", "1") + "]");
+
+        assertEquals(1, operations.get(0).quantity());
+    }
+
+    @Test
+    void minimumUnitPriceWithSixDecimalsIsAccepted() {
+        List<TradeOperation> operations = parser.parse("[" + op("PETR", "BUY", "0.000001", "1") + "]");
+
+        assertEquals(new BigDecimal("0.000001"), operations.get(0).unitPrice());
+        assertEquals(6, operations.get(0).unitPrice().scale());
+    }
+
+    @Test
+    void unitPriceWithSevenDecimalsAtTheMaximumIsRejectedByScale() {
+        InvalidInputException error = assertThrows(InvalidInputException.class,
+                () -> parser.parse("[" + op("PETR", "BUY", "1000000000.0000001", "1") + "]"));
+
+        assertTrue(error.getMessage().contains("at most 6 decimal places"));
+    }
+
+    @Test
+    void unitPriceAboveTheMaximumIsRejectedByRange() {
+        InvalidInputException error = assertThrows(InvalidInputException.class,
+                () -> parser.parse("[" + op("PETR", "BUY", "1000000001", "1") + "]"));
+
+        assertTrue(error.getMessage().contains("at most 1000000000"));
+    }
+
+    @Test
+    void quantityAboveTheMaximumIsRejected() {
+        assertRejected("[" + op("PETR", "BUY", "10.00", "1000000001") + "]");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"[null]", "[\"BUY\"]", "[5]", "[true]"})
+    void nonObjectOperationElementIsRejected(String line) {
+        assertRejected(line);
+    }
+
+    @Test
+    void nonObjectOperationReportsItsPosition() {
+        InvalidInputException error = assertThrows(InvalidInputException.class,
+                () -> parser.parse("[" + op("PETR", "BUY", "10.00", "1") + ",null]"));
+
+        assertTrue(error.getMessage().contains("operation 2: must be a JSON object"));
+    }
+
+    @Test
+    void whitespaceSurroundingANonEmptyArrayIsAccepted() {
+        List<TradeOperation> operations =
+                parser.parse(" \t[" + op("PETR", "BUY", "10.00", "1") + "]\t ");
+
+        assertEquals(1, operations.size());
+        assertEquals("PETR", operations.get(0).asset());
+    }
+
+    @Test
+    void quantityInExponentNotationIsAcceptedWhenIntegral() {
+        List<TradeOperation> exponent = parser.parse("[" + op("PETR", "BUY", "10.00", "1e3") + "]");
+        List<TradeOperation> plain = parser.parse("[" + op("PETR", "BUY", "10.00", "1000") + "]");
+
+        assertEquals(1000, exponent.get(0).quantity());
+        assertEquals(plain, exponent);
+    }
+
+    @Test
+    void unitPriceInExponentNotationIsAccepted() {
+        // Jackson normalizes the JSON number "1.0e1" to 10 (scale 0); the exponent form is a
+        // number, so the parser accepts it and no scale violation applies.
+        List<TradeOperation> exponent =
+                parser.parse("[" + op("PETR", "BUY", "1.0e1", "1") + "]");
+        List<TradeOperation> plain = parser.parse("[" + op("PETR", "BUY", "10.00", "1") + "]");
+
+        assertEquals(new BigDecimal("10"), exponent.get(0).unitPrice());
+        assertEquals(0, exponent.get(0).unitPrice().compareTo(plain.get(0).unitPrice()));
     }
 
     @Test

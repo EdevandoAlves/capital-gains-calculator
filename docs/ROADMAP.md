@@ -18,11 +18,11 @@ Acceptance:
 Deliverables: `SimulatedTaxEngine` (15%, exemption below 10000.00 gross, loss carryforward, offsetting) replacing `ZeroTaxEngine`; tests for every rule in DOMAIN_RULES §2, incl. the exact-threshold edge and loss-pool invariants.
 Acceptance: each §2 rule has a focused test; `mvn -q verify` green; docs consistent.
 
-## Phase 3 — Robustness & edge hardening ◐
+## Phase 3 — Robustness & edge hardening ☑
 Deliverables: validation-matrix tests (malformed JSON, unknown fields, limits, scale), atomic-output and exit-code tests, parametrized rounding tests, determinism test, larger stress case.
 Acceptance: every documented rejection has a test; determinism/independence verified; `mvn -q verify` green.
 
-## Phase 4 — CI, packaging, docs ☐
+## Phase 4 — CI, packaging, docs ◐
 Deliverables: GitHub Actions workflow (ubuntu, JDK 21, `mvn verify`), shade JAR verified runnable, README complete (build/run/examples/limitations), docs sync.
 Acceptance: workflow consistent with local build; README enables independent execution.
 

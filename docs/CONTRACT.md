@@ -14,8 +14,8 @@ Deterministic, line-delimited JSON processor. Same input ⇒ same output, byte-f
 |-------------|---------|----------------------------------------------------|
 | `asset`     | string  | matches `^[A-Z0-9]{1,20}$`                          |
 | `type`      | string  | `"BUY"` or `"SELL"` (exact, case-sensitive)         |
-| `unitPrice` | number  | `> 0`, `<= 1000000000`, at most 6 decimal places as written (`10.0000000` is rejected even though numerically exact) |
-| `quantity`  | integer | integral value, `>= 1`, `<= 1000000000`; may be written with trailing decimal zeros (`100.00` is accepted, `1.5` is not); numeric strings are rejected |
+| `unitPrice` | number  | `> 0`, `<= 1000000000`, at most 6 decimal places. Scale is validated on the parsed value: plain decimal literals keep their written scale (`10.0000000` is rejected even though numerically exact); JSON exponent notation is normalized by conversion (`1.0e1` → `10`, scale 0, accepted) |
+| `quantity`  | integer | integral value in any valid JSON number form (`100`, `100.00`, `1e3`), `>= 1`, `<= 1000000000`; non-integral values (`1.5`) and numeric strings are rejected |
 
 Example input (2 simulations):
 
