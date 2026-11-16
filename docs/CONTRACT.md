@@ -14,8 +14,8 @@ Deterministic, line-delimited JSON processor. Same input ⇒ same output, byte-f
 |-------------|---------|----------------------------------------------------|
 | `asset`     | string  | matches `^[A-Z0-9]{1,20}$`                          |
 | `type`      | string  | `"BUY"` or `"SELL"` (exact, case-sensitive)         |
-| `unitPrice` | number  | `> 0`, `<= 1000000000`, at most 6 decimal places    |
-| `quantity`  | integer | `>= 1`, `<= 1000000000`, no fractional part         |
+| `unitPrice` | number  | `> 0`, `<= 1000000000`, at most 6 decimal places as written (`10.0000000` is rejected even though numerically exact) |
+| `quantity`  | integer | integral value, `>= 1`, `<= 1000000000`; may be written with trailing decimal zeros (`100.00` is accepted, `1.5` is not); numeric strings are rejected |
 
 Example input (2 simulations):
 
@@ -49,7 +49,7 @@ Monetary fields always carry exactly 2 decimals. Numbers are JSON numbers (never
 
 On the first problem, the process stops with **no stdout output** (results are buffered and only flushed on full success) and a single `ERROR: <reason>` line on stderr.
 
-Rejected inputs include: malformed JSON; missing or unknown fields; wrong types; `unitPrice`/`quantity` out of range or wrong scale; SELL exceeding the current position of that asset.
+Rejected inputs include: malformed JSON (including duplicate object keys); missing or unknown fields; wrong types; `unitPrice`/`quantity` out of range or wrong scale; SELL exceeding the current position of that asset.
 
 ## Exit codes
 

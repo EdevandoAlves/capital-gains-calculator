@@ -35,6 +35,7 @@ Apuração is per simulation. State: a single accumulated-loss pool shared by al
 - `realizedProfitLoss`: rounded once, scale 2, HALF_UP, at realization.
 - `tax`: rounded once, scale 2, HALF_UP, after offsetting.
 - No premature rounding: intermediate products use full precision; each reported value is rounded exactly once, where documented above.
+- `averageCost` is serialized from the stored scale-6 value with one HALF_UP rounding to 2 decimals.
 - Output monetary values: exactly 2 decimals.
 
 ## 4. Invariants (test targets)
