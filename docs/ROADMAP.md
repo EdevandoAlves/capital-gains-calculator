@@ -22,11 +22,11 @@ Acceptance: each §2 rule has a focused test; `mvn -q verify` green; docs consis
 Deliverables: validation-matrix tests (malformed JSON, unknown fields, limits, scale), atomic-output and exit-code tests, parametrized rounding tests, determinism test, larger stress case.
 Acceptance: every documented rejection has a test; determinism/independence verified; `mvn -q verify` green.
 
-## Phase 4 — CI, packaging, docs ◐
+## Phase 4 — CI, packaging, docs ☑
 Deliverables: GitHub Actions workflow (ubuntu, JDK 21, `mvn verify`), shade JAR verified runnable, README complete (build/run/examples/limitations), docs sync.
 Acceptance: workflow consistent with local build; README enables independent execution.
 
-## Phase 5 — Final audit & handoff ☐
+## Phase 5 — Final audit & handoff ◐
 Deliverables: fresh delegate review, fixes for real findings, `docs/REVERSE_ENGINEERING_GUIDE.md`, final commit, STATUS updated.
 Acceptance: no known critical issues; limitations explicit; suite green.
 

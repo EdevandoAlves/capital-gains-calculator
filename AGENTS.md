@@ -22,7 +22,7 @@ Single Maven module, package root `com.capitalgains`:
 - `Main` — CLI entry point: reads stdin, delegates, maps failures to exit codes (0 / 1 / 2).
 - `json` — strict line-delimited JSON parsing (Jackson) and result serialization (fixed field order).
 - `domain` — `TradeOperation`, `OperationType`, `AssetPosition` (weighted average state), `Portfolio` (per-asset positions), `OperationResult`, `LossPool`.
-- `tax` — `TaxEngine` interface; `ZeroTaxEngine` (placeholder) and `SimulatedTaxEngine` (15% rate, R$ 10,000 gross-value exemption, loss carryforward).
+- `tax` — `TaxEngine` interface and `SimulatedTaxEngine` (production: 15% rate, R$ 10,000 gross-value exemption, loss carryforward).
 - `app` — `SimulationRunner`: parse → process each simulation independently → tax → serialize; buffers all output (atomicity).
 
 Processing order is the order received; simulations are independent; assets within a simulation share only the loss pool.
