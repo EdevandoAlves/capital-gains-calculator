@@ -22,9 +22,10 @@ public final class Portfolio {
             return ZERO_MONEY;
         }
         AssetPosition position = positions.get(asset);
-        if (position == null) {
+        long held = position == null ? 0 : position.quantity();
+        if (operation.quantity() > held) {
             throw new DomainException("SELL of " + operation.quantity() + " " + asset
-                    + " exceeds position of 0");
+                    + " exceeds position of " + held);
         }
         return position.sell(operation.unitPrice(), operation.quantity());
     }

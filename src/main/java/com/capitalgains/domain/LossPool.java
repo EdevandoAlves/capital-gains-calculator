@@ -16,15 +16,18 @@ public final class LossPool {
 
     public void add(BigDecimal loss) {
         if (loss.signum() <= 0) {
-            throw new IllegalArgumentException("loss must be positive");
+            throw new DomainException("loss must be positive");
         }
         balance = balance.add(loss);
     }
 
     /**
-     * Offsets the given gain against the pool and returns the consumed amount.
+     * Offsets the given positive gain against the pool and returns the consumed amount.
      */
     public BigDecimal consume(BigDecimal gain) {
+        if (gain.signum() <= 0) {
+            throw new DomainException("gain to offset must be positive");
+        }
         BigDecimal offset = balance.min(gain);
         balance = balance.subtract(offset);
         return offset;

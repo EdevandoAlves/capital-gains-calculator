@@ -26,7 +26,7 @@ Example input (2 simulations):
 
 ## Output (stdout)
 
-One line per accepted input line, same order. Each line is a JSON array with one result object per operation:
+One line per non-blank input line, same order. Each line is a JSON array with one result object per operation:
 
 ```json
 [{"operation":1,"asset":"PETR","type":"BUY","remainingQuantity":100,"averageCost":10.00,"realizedProfitLoss":0.00,"tax":0.00,"compensableLoss":0.00},{"operation":2,"asset":"PETR","type":"SELL","remainingQuantity":50,"averageCost":10.00,"realizedProfitLoss":125.00,"tax":0.00,"compensableLoss":0.00}]
@@ -38,7 +38,7 @@ One line per accepted input line, same order. Each line is a JSON array with one
 | `operation`           | 1-based index of the operation inside its simulation           |
 | `asset` / `type`      | echo of the operation                                          |
 | `remainingQuantity`   | position of that asset after the operation                     |
-| `averageCost`         | weighted average cost after the operation (`0.00` if flat)     |
+| `averageCost`         | weighted average cost after the operation; `0.00` when flat (a non-flat sub-cent average also displays as `0.00`) |
 | `realizedProfitLoss`  | realized P/L of a SELL (`0.00` for BUY), positive = gain       |
 | `tax`                 | simulated tax charged by the operation (see DOMAIN_RULES)      |
 | `compensableLoss`     | accumulated loss pool of the simulation after the operation    |
@@ -47,7 +47,7 @@ Monetary fields always carry exactly 2 decimals. Numbers are JSON numbers (never
 
 ## Errors — fail-fast, atomic
 
-On the first problem, the process stops with **no stdout output** (results are buffered and only flushed on full success) and a single `ERROR: <reason>` line on stderr.
+On the first input problem, the process stops before writing any stdout output (results are buffered and only flushed on full success) and emits a single `ERROR: <reason>` line on stderr. The only way stdout can be partial is an I/O failure during the final write, which surfaces as exit code 2.
 
 Rejected inputs include: malformed JSON (including duplicate object keys); missing or unknown fields; wrong types; `unitPrice`/`quantity` out of range or wrong scale; SELL exceeding the current position of that asset.
 

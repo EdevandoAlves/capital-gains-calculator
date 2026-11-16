@@ -24,6 +24,7 @@ public final class SimulationParser {
 
     private static final Pattern ASSET_PATTERN = Pattern.compile("^[A-Z0-9]{1,20}$");
     private static final Set<String> FIELDS = Set.of("asset", "type", "unitPrice", "quantity");
+    private static final List<String> REQUIRED_FIELD_ORDER = List.of("asset", "type", "unitPrice", "quantity");
     private static final BigDecimal MAX_PRICE = new BigDecimal("1000000000");
     private static final BigDecimal MAX_QUANTITY = new BigDecimal("1000000000");
     private static final BigDecimal MIN_QUANTITY = BigDecimal.ONE;
@@ -70,7 +71,7 @@ public final class SimulationParser {
                 throw new InvalidInputException(where + "unknown field '" + name + "'");
             }
         }
-        for (String field : FIELDS) {
+        for (String field : REQUIRED_FIELD_ORDER) {
             if (!node.has(field)) {
                 throw new InvalidInputException(where + "missing required field '" + field + "'");
             }

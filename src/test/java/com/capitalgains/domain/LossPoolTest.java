@@ -47,8 +47,10 @@ class LossPoolTest {
     void nonPositiveLossIsRejected() {
         LossPool pool = new LossPool();
 
-        assertThrows(IllegalArgumentException.class, () -> pool.add(BigDecimal.ZERO));
-        assertThrows(IllegalArgumentException.class, () -> pool.add(new BigDecimal("-1.00")));
+        assertThrows(DomainException.class, () -> pool.add(BigDecimal.ZERO));
+        assertThrows(DomainException.class, () -> pool.add(new BigDecimal("-1.00")));
+        assertThrows(DomainException.class, () -> pool.consume(BigDecimal.ZERO));
+        assertThrows(DomainException.class, () -> pool.consume(new BigDecimal("-1.00")));
         assertEquals(new BigDecimal("0.00"), pool.balance());
     }
 }

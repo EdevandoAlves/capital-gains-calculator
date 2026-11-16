@@ -134,8 +134,8 @@ Single Maven module, package root `com.capitalgains`:
 Simulations run strictly in input order; assets within one simulation are independent and share
 only that simulation's loss pool.
 
-A deeper walkthrough of the design and the reasoning behind it — `docs/REVERSE_ENGINEERING_GUIDE.md`
-— is planned for the final phase.
+A deeper walkthrough of the design and the reasoning behind it — including study questions and
+manual challenges — lives in [docs/REVERSE_ENGINEERING_GUIDE.md](docs/REVERSE_ENGINEERING_GUIDE.md).
 
 ## Limitations
 
@@ -152,12 +152,14 @@ A deeper walkthrough of the design and the reasoning behind it — `docs/REVERSE
   decimal places, and fractional shares are rejected. Short positions are not supported: a SELL
   above the current position aborts the run.
 - **Buffered output.** The whole result is held in memory before being written, which keeps output
-  atomic at the cost of memory proportional to the total output size.
+  atomic for every input failure at the cost of memory proportional to the total output size. An
+  I/O failure during that single final write can leave a partial stdout with exit code 2.
 
 ## Documentation
 
 - [docs/CONTRACT.md](docs/CONTRACT.md) — public CLI contract: input/output shape, validation, exit codes.
 - [docs/DOMAIN_RULES.md](docs/DOMAIN_RULES.md) — financial rules, precision policy, invariants.
+- [docs/REVERSE_ENGINEERING_GUIDE.md](docs/REVERSE_ENGINEERING_GUIDE.md) — study roadmap: execution flow, class tour, questions and manual challenges.
 - [docs/ROADMAP.md](docs/ROADMAP.md) — phase plan and acceptance criteria.
 - [docs/STATUS.md](docs/STATUS.md) — current project state.
 - [AGENTS.md](AGENTS.md) — engineering conventions for contributors and agents.

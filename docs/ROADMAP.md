@@ -7,7 +7,7 @@ Deliverables: AGENTS.md, docs/{ROADMAP,STATUS,CONTRACT,DOMAIN_RULES}.md, README 
 Acceptance: contract unambiguous and testable; rules carry worked examples; repo clean.
 
 ## Phase 1 — Maven skeleton, operations engine, JSON I/O, CLI ☑
-Deliverables: pom.xml (Java 21, Jackson, JUnit 5, shade JAR), package layout per AGENTS.md, domain engine (BUY/SELL, weighted average, multi-asset, zero reset, oversell rejection), strict JSON parser/writer, `Main` with exit codes, `ZeroTaxEngine` placeholder (tax always 0.00; loss pool already tracked and reported).
+Deliverables: pom.xml (Java 21, Jackson, JUnit 5, shade JAR), package layout per AGENTS.md, domain engine (BUY/SELL, weighted average, multi-asset, zero reset, oversell rejection), strict JSON parser/writer, `Main` with exit codes, `ZeroTaxEngine` placeholder (tax always 0.00; loss pool already tracked and reported; later replaced by `SimulatedTaxEngine` and removed).
 Acceptance:
 - `mvn -q verify` green.
 - Runnable JAR reproduces the CONTRACT example output byte-for-byte.
@@ -26,9 +26,9 @@ Acceptance: every documented rejection has a test; determinism/independence veri
 Deliverables: GitHub Actions workflow (ubuntu, JDK 21, `mvn verify`), shade JAR verified runnable, README complete (build/run/examples/limitations), docs sync.
 Acceptance: workflow consistent with local build; README enables independent execution.
 
-## Phase 5 — Final audit & handoff ◐
-Deliverables: fresh delegate review, fixes for real findings, `docs/REVERSE_ENGINEERING_GUIDE.md`, final commit, STATUS updated.
-Acceptance: no known critical issues; limitations explicit; suite green.
+## Phase 5 — Final audit & handoff ☑ (project complete)
+Deliverables: fresh independent audit (incl. differential oracle vs an independent reference implementation, 700 randomized simulations, byte-identical), repairs for accepted findings, `docs/REVERSE_ENGINEERING_GUIDE.md`, final commit, STATUS updated.
+Acceptance: no critical/major findings open; limitations explicit; suite green (144 tests).
 
 ## Rules
 - One delegate at a time; sequential phases; repairs delegated with precise findings and a required regression test.

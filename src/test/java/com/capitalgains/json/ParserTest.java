@@ -56,6 +56,14 @@ class ParserTest {
         assertTrue(parser.parse("  [ ]  ").isEmpty());
     }
 
+    @Test
+    void duplicateKeysAreRejected() {
+        assertRejected("[{\"asset\":\"PETR\",\"type\":\"BUY\",\"unitPrice\":10.00,"
+                + "\"quantity\":1,\"quantity\":2}]");
+        assertRejected("[{\"asset\":\"PETR\",\"asset\":\"VALE\",\"type\":\"BUY\","
+                + "\"unitPrice\":10.00,\"quantity\":1}]");
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
             "",

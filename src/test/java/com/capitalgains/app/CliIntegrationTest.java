@@ -249,6 +249,32 @@ class CliIntegrationTest {
     }
 
     @Test
+    void oversellAfterFlatteningNamesTheAssetLikeAnOversellOfAnUnboughtAsset() {
+        Invocation result = invoke("[{\"asset\":\"PETR\",\"type\":\"BUY\",\"unitPrice\":10.00,"
+                + "\"quantity\":1},{\"asset\":\"PETR\",\"type\":\"SELL\",\"unitPrice\":10.00,"
+                + "\"quantity\":1},{\"asset\":\"PETR\",\"type\":\"SELL\",\"unitPrice\":10.00,"
+                + "\"quantity\":1}]\n");
+
+        assertEquals(1, result.exitCode());
+        assertEquals("", result.out());
+        assertTrue(result.err().contains("ERROR: line 1: SELL of 1 PETR exceeds position of 0"));
+    }
+
+    @Test
+    void subCentAverageDisplaysAsZeroButIsPreservedForLaterSales() {
+        Invocation result = invoke("[{\"asset\":\"PETR\",\"type\":\"BUY\",\"unitPrice\":0.000001,"
+                + "\"quantity\":1},{\"asset\":\"PETR\",\"type\":\"SELL\",\"unitPrice\":1.00,"
+                + "\"quantity\":1}]\n");
+
+        assertEquals(0, result.exitCode());
+        assertTrue(result.out().contains("\"operation\":1,\"asset\":\"PETR\",\"type\":\"BUY\","
+                + "\"remainingQuantity\":1,\"averageCost\":0.00"));
+        assertTrue(result.out().contains("\"operation\":2,\"asset\":\"PETR\",\"type\":\"SELL\","
+                + "\"remainingQuantity\":0,\"averageCost\":0.00,\"realizedProfitLoss\":1.00,"
+                + "\"tax\":0.00,\"compensableLoss\":0.00"));
+    }
+
+    @Test
     void crlfLineEndingsAreProcessedLikeLf() {
         Invocation lf = invoke(CONTRACT_INPUT);
         Invocation crlf = invoke(CONTRACT_INPUT.replace("\n", "\r\n"));

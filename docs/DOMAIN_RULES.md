@@ -43,7 +43,7 @@ Apuração is per simulation. State: a single accumulated-loss pool shared by al
 1. `tax >= 0` always.
 2. `pool >= 0` always.
 3. `remainingQuantity >= 0` always (no short positions).
-4. `averageCost >= 0`; `= 0` iff the position is flat.
+4. `averageCost >= 0`; `= 0` iff the position is flat. The invariant holds on the **stored** scale-6 value; the displayed 2-decimal value may read `0.00` for a non-flat position whose average is below half a cent (sub-cent averages remain fully effective in later P/L calculations).
 5. Simulations are independent: reordering input lines cannot change any line's output.
 6. Determinism: identical input bytes ⇒ identical output bytes.
 7. A SELL preserves the average of the remaining units.

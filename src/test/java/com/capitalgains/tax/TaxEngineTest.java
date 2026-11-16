@@ -34,7 +34,7 @@ class TaxEngineTest {
     void chargesFifteenPercentOnTaxableGain() {
         LossPool pool = new LossPool();
 
-        BigDecimal tax = engine.tax(sell("100.00", 100), new BigDecimal("5000.00"), pool);
+        BigDecimal tax = engine.tax(sell("200.00", 100), new BigDecimal("5000.00"), pool);
 
         assertEquals(new BigDecimal("750.00"), tax);
         assertEquals(new BigDecimal("0.00"), pool.balance());
@@ -103,7 +103,7 @@ class TaxEngineTest {
     void realizedLossIsNotTaxedAndLeavesPoolUntouched() {
         LossPool pool = new LossPool();
 
-        BigDecimal tax = engine.tax(sell("50.00", 100), new BigDecimal("-1000.00"), pool);
+        BigDecimal tax = engine.tax(sell("100.00", 100), new BigDecimal("-1000.00"), pool);
 
         assertEquals(new BigDecimal("0.00"), tax);
         assertEquals(new BigDecimal("0.00"), pool.balance());
@@ -113,7 +113,7 @@ class TaxEngineTest {
     void realizedZeroIsNotTaxedAndLeavesPoolUntouched() {
         LossPool pool = poolWith("10.00");
 
-        BigDecimal tax = engine.tax(sell("50.00", 100), new BigDecimal("0.00"), pool);
+        BigDecimal tax = engine.tax(sell("100.00", 100), new BigDecimal("0.00"), pool);
 
         assertEquals(new BigDecimal("0.00"), tax);
         assertEquals(new BigDecimal("10.00"), pool.balance());
